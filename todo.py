@@ -1,9 +1,12 @@
 """A tiny to-do list for the terminal. Tasks live in todo.json next to where you run it."""
 import argparse
 import json
+import re
+from datetime import date
 from pathlib import Path
 
 FILE = Path("todo.json")
+DUE_RE = re.compile(r"\d{4}-\d{2}-\d{2}\Z")
 
 
 def load():
@@ -14,8 +17,18 @@ def save(tasks):
     FILE.write_text(json.dumps(tasks, indent=2))
 
 
-def add(tasks, text):
-    tasks.append({"text": text, "done": False})
+def parse_due(value):
+    if not DUE_RE.fullmatch(value):
+        raise ValueError("due date must be YYYY-MM-DD")
+    date.fromisoformat(value)
+    return value
+
+
+def add(tasks, text, due=None):
+    if due is None:
+        tasks.append({"text": text, "done": False})
+    else:
+        tasks.append({"text": text, "done": False, "due": parse_due(due)})
     return tasks
 
 
