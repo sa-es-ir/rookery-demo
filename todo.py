@@ -24,6 +24,13 @@ def done(tasks, n):
     return tasks
 
 
+def clear(tasks):
+    for t in tasks:
+        if t["done"]:
+            tasks.remove(t)
+    return tasks
+
+
 def show(tasks):
     return "\n".join(f"{i}. [{'x' if t['done'] else ' '}] {t['text']}" for i, t in enumerate(tasks, 1))
 
@@ -34,12 +41,15 @@ def main(argv=None):
     sub.add_parser("add").add_argument("text")
     sub.add_parser("done").add_argument("n", type=int)
     sub.add_parser("list")
+    sub.add_parser("clear")
     a = p.parse_args(argv)
     tasks = load()
     if a.cmd == "add":
         save(add(tasks, a.text))
     elif a.cmd == "done":
         save(done(tasks, a.n))
+    elif a.cmd == "clear":
+        save(clear(tasks))
     print(show(load()))
 
 
