@@ -37,8 +37,18 @@ def done(tasks, n):
     return tasks
 
 
-def show(tasks):
-    return "\n".join(f"{i}. [{'x' if t['done'] else ' '}] {t['text']}" for i, t in enumerate(tasks, 1))
+def show(tasks, today=None):
+    today = today or date.today()
+    lines = []
+    for i, t in enumerate(tasks, 1):
+        line = f"{i}. [{'x' if t['done'] else ' '}] {t['text']}"
+        due = t.get("due")
+        if due:
+            line += f" (due {due})"
+            if not t["done"] and date.fromisoformat(due) < today:
+                line += " OVERDUE"
+        lines.append(line)
+    return "\n".join(lines)
 
 
 def main(argv=None):
