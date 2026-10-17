@@ -2,6 +2,7 @@
 import argparse
 import json
 import re
+import sys
 from datetime import date
 from pathlib import Path
 
@@ -54,13 +55,19 @@ def show(tasks, today=None):
 def main(argv=None):
     p = argparse.ArgumentParser(prog="todo")
     sub = p.add_subparsers(dest="cmd", required=True)
-    sub.add_parser("add").add_argument("text")
+    add_p = sub.add_parser("add")
+    add_p.add_argument("text")
+    add_p.add_argument("--due")
     sub.add_parser("done").add_argument("n", type=int)
     sub.add_parser("list")
     a = p.parse_args(argv)
     tasks = load()
     if a.cmd == "add":
-        save(add(tasks, a.text))
+        try:
+            save(add(tasks, a.text, a.due))
+        except ValueError as e:
+            print(f"todo: error: {e}", file=sys.stderr)
+            sys.exit(2)
     elif a.cmd == "done":
         save(done(tasks, a.n))
     print(show(load()))
