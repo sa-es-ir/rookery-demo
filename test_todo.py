@@ -1,3 +1,6 @@
+import contextlib
+import io
+import json
 import tempfile
 from datetime import date
 from pathlib import Path
@@ -79,6 +82,38 @@ def test_main_bad_due_exits_2_and_saves_nothing():
         assert not Path(d, "todo.json").exists()
 
 
+def test_main_remove_out_of_range_exits_2_and_saves_nothing():
+    original = todo.FILE
+    with tempfile.TemporaryDirectory() as d:
+        todo.FILE = Path(d) / "todo.json"
+        err = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                todo.main(["remove", "9"])
+        except SystemExit as e:
+            assert e.code == 2
+        else:
+            raise AssertionError("expected SystemExit")
+        finally:
+            todo.FILE = original
+        assert not Path(d, "todo.json").exists()
+        assert err.getvalue().strip() == "todo: error: no task 9"
+
+
+def test_main_remove_saves():
+    original = todo.FILE
+    with tempfile.TemporaryDirectory() as d:
+        path = Path(d) / "todo.json"
+        todo.FILE = path
+        todo.save(todo.add(todo.add([], "a"), "b"))
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                todo.main(["remove", "1"])
+        finally:
+            todo.FILE = original
+        assert json.loads(path.read_text()) == [{"text": "b", "done": False}]
+
+
 if __name__ == "__main__":
     test_add_and_done()
     test_add_due()
@@ -89,4 +124,6 @@ if __name__ == "__main__":
     test_remove()
     test_remove_out_of_range()
     test_main_bad_due_exits_2_and_saves_nothing()
+    test_main_remove_out_of_range_exits_2_and_saves_nothing()
+    test_main_remove_saves()
     print("ok")

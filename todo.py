@@ -66,6 +66,7 @@ def main(argv=None):
     add_p.add_argument("text")
     add_p.add_argument("--due")
     sub.add_parser("done").add_argument("n", type=int)
+    sub.add_parser("remove").add_argument("n", type=int)
     sub.add_parser("list")
     a = p.parse_args(argv)
     tasks = load()
@@ -77,6 +78,12 @@ def main(argv=None):
             sys.exit(2)
     elif a.cmd == "done":
         save(done(tasks, a.n))
+    elif a.cmd == "remove":
+        try:
+            save(remove(tasks, a.n))
+        except IndexError:
+            print(f"todo: error: no task {a.n}", file=sys.stderr)
+            sys.exit(2)
     print(show(load()))
 
 
