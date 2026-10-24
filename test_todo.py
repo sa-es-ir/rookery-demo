@@ -3,7 +3,7 @@ from datetime import date
 from pathlib import Path
 
 import todo
-from todo import add, done, show
+from todo import add, done, remove, show
 
 
 def test_add_and_done():
@@ -46,6 +46,24 @@ def test_show_due_today_not_overdue():
     assert show(add([], "x", "2026-10-17"), today=today) == "1. [ ] x (due 2026-10-17)"
 
 
+def test_remove():
+    tasks = add(add(add([], "a"), "b"), "c")
+    remove(tasks, 2)
+    assert show(tasks) == "1. [ ] a\n2. [ ] c"
+
+
+def test_remove_out_of_range():
+    tasks = add(add([], "a"), "b")
+    for n in (0, 3):
+        try:
+            remove(tasks, n)
+        except IndexError:
+            pass
+        else:
+            raise AssertionError(f"expected IndexError for {n}")
+    assert show(tasks) == "1. [ ] a\n2. [ ] b"
+
+
 def test_main_bad_due_exits_2_and_saves_nothing():
     original = todo.FILE
     with tempfile.TemporaryDirectory() as d:
@@ -68,5 +86,7 @@ if __name__ == "__main__":
     test_show_overdue()
     test_show_done_past_due_not_overdue()
     test_show_due_today_not_overdue()
+    test_remove()
+    test_remove_out_of_range()
     test_main_bad_due_exits_2_and_saves_nothing()
     print("ok")

@@ -38,6 +38,13 @@ def done(tasks, n):
     return tasks
 
 
+def remove(tasks, n):
+    if not 1 <= n <= len(tasks):
+        raise IndexError(n)
+    del tasks[n - 1]
+    return tasks
+
+
 def show(tasks, today=None):
     today = today or date.today()
     lines = []
