@@ -7,6 +7,7 @@ tasks and the review that produced it.
 ```
 python todo.py add "write docs"
 python todo.py done 1
+python todo.py remove 1
 python todo.py list
 python test_todo.py
 ```

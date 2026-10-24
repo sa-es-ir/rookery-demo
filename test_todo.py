@@ -1,9 +1,12 @@
+import contextlib
+import io
+import json
 import tempfile
 from datetime import date
 from pathlib import Path
 
 import todo
-from todo import add, done, show
+from todo import add, done, remove, show
 
 
 def test_add_and_done():
@@ -46,6 +49,24 @@ def test_show_due_today_not_overdue():
     assert show(add([], "x", "2026-10-17"), today=today) == "1. [ ] x (due 2026-10-17)"
 
 
+def test_remove():
+    tasks = add(add(add([], "a"), "b"), "c")
+    remove(tasks, 2)
+    assert show(tasks) == "1. [ ] a\n2. [ ] c"
+
+
+def test_remove_out_of_range():
+    tasks = add(add([], "a"), "b")
+    for n in (0, 3):
+        try:
+            remove(tasks, n)
+        except IndexError:
+            pass
+        else:
+            raise AssertionError(f"expected IndexError for {n}")
+    assert show(tasks) == "1. [ ] a\n2. [ ] b"
+
+
 def test_main_bad_due_exits_2_and_saves_nothing():
     original = todo.FILE
     with tempfile.TemporaryDirectory() as d:
@@ -61,6 +82,38 @@ def test_main_bad_due_exits_2_and_saves_nothing():
         assert not Path(d, "todo.json").exists()
 
 
+def test_main_remove_out_of_range_exits_2_and_saves_nothing():
+    original = todo.FILE
+    with tempfile.TemporaryDirectory() as d:
+        todo.FILE = Path(d) / "todo.json"
+        err = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                todo.main(["remove", "9"])
+        except SystemExit as e:
+            assert e.code == 2
+        else:
+            raise AssertionError("expected SystemExit")
+        finally:
+            todo.FILE = original
+        assert not Path(d, "todo.json").exists()
+        assert err.getvalue().strip() == "todo: error: no task 9"
+
+
+def test_main_remove_saves():
+    original = todo.FILE
+    with tempfile.TemporaryDirectory() as d:
+        path = Path(d) / "todo.json"
+        todo.FILE = path
+        todo.save(todo.add(todo.add([], "a"), "b"))
+        try:
+            with contextlib.redirect_stdout(io.StringIO()):
+                todo.main(["remove", "1"])
+        finally:
+            todo.FILE = original
+        assert json.loads(path.read_text()) == [{"text": "b", "done": False}]
+
+
 if __name__ == "__main__":
     test_add_and_done()
     test_add_due()
@@ -68,5 +121,9 @@ if __name__ == "__main__":
     test_show_overdue()
     test_show_done_past_due_not_overdue()
     test_show_due_today_not_overdue()
+    test_remove()
+    test_remove_out_of_range()
     test_main_bad_due_exits_2_and_saves_nothing()
+    test_main_remove_out_of_range_exits_2_and_saves_nothing()
+    test_main_remove_saves()
     print("ok")
