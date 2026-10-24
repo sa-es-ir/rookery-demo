@@ -67,6 +67,48 @@ def test_remove_out_of_range():
     assert show(tasks) == "1. [ ] a\n2. [ ] b"
 
 
+def test_done_out_of_range():
+    tasks = add(add([], "a"), "b")
+    for n in (0, 3):
+        try:
+            done(tasks, n)
+        except IndexError:
+            pass
+        else:
+            raise AssertionError(f"expected IndexError for {n}")
+    assert show(tasks) == "1. [ ] a\n2. [ ] b"
+
+
+def test_done_rejects_non_int():
+    tasks = add([], "a")
+    for n in (True, "1", 1.0):
+        try:
+            done(tasks, n)
+        except TypeError:
+            pass
+        else:
+            raise AssertionError(f"expected TypeError for {n!r}")
+    assert show(tasks) == "1. [ ] a"
+
+
+def test_main_done_out_of_range_exits_2_and_saves_nothing():
+    original = todo.FILE
+    with tempfile.TemporaryDirectory() as d:
+        todo.FILE = Path(d) / "todo.json"
+        err = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+                todo.main(["done", "0"])
+        except SystemExit as e:
+            assert e.code == 2
+        else:
+            raise AssertionError("expected SystemExit")
+        finally:
+            todo.FILE = original
+        assert not Path(d, "todo.json").exists()
+        assert err.getvalue().strip() == "todo: error: no task 0"
+
+
 def test_main_bad_due_exits_2_and_saves_nothing():
     original = todo.FILE
     with tempfile.TemporaryDirectory() as d:
@@ -123,6 +165,9 @@ if __name__ == "__main__":
     test_show_due_today_not_overdue()
     test_remove()
     test_remove_out_of_range()
+    test_done_out_of_range()
+    test_done_rejects_non_int()
+    test_main_done_out_of_range_exits_2_and_saves_nothing()
     test_main_bad_due_exits_2_and_saves_nothing()
     test_main_remove_out_of_range_exits_2_and_saves_nothing()
     test_main_remove_saves()

@@ -34,6 +34,10 @@ def add(tasks, text, due=None):
 
 
 def done(tasks, n):
+    if isinstance(n, bool) or not isinstance(n, int):
+        raise TypeError(f"task number must be an int, not {type(n).__name__}")
+    if not 1 <= n <= len(tasks):
+        raise IndexError(n)
     tasks[n - 1]["done"] = True
     return tasks
 
@@ -77,7 +81,11 @@ def main(argv=None):
             print(f"todo: error: {e}", file=sys.stderr)
             sys.exit(2)
     elif a.cmd == "done":
-        save(done(tasks, a.n))
+        try:
+            save(done(tasks, a.n))
+        except IndexError:
+            print(f"todo: error: no task {a.n}", file=sys.stderr)
+            sys.exit(2)
     elif a.cmd == "remove":
         try:
             save(remove(tasks, a.n))
